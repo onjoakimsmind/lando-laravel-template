@@ -1,0 +1,77 @@
+name: template
+recipe: laravel
+proxy:
+  appserver:
+    - template.lndo.site
+  mailhog:
+    - mail.template.lndo.site
+services:
+  appserver:
+    config: {}
+    composer_version: "2.6.5"
+    type: php:8.1
+    via: apache:2.4
+    ssl: true
+    webroot: public
+  database:
+    config: {}
+    authentication: mysql_native_password
+    type: mysql:8.0
+    portforward: 3306
+    creds:
+      user: lando
+      password: lando
+      database: template
+  mailhog:
+    type: mailhog
+    hogfrom:
+      - appserver
+tooling:
+  composer:
+    service: appserver
+    cmd: composer --ansi
+  db-import <file>:
+    service: ":host"
+    description: Imports a dump file into a database service
+    cmd: /helpers/sql-import.sh
+    user: root
+    options:
+      host:
+        description: The database service to use
+        default: database
+        alias:
+          - h
+      no-wipe:
+        description: Do not destroy the existing database before an import
+        boolean: true
+  "db-export [file]":
+    service: ":host"
+    description: Exports database from a database service to a file
+    cmd: /helpers/sql-export.sh
+    user: root
+    options:
+      host:
+        description: The database service to use
+        default: database
+        alias:
+          - h
+      stdout:
+        description: Dump database to stdout
+  php:
+    service: appserver
+    cmd: php
+  mysql:
+    service: ":host"
+    description: Drops into a MySQL shell on a database service
+    cmd: mysql -uroot
+    options:
+      host:
+        description: The database service to use
+        default: database
+        alias:
+          - h
+  laravel:
+    service: appserver
+  artisan:
+    service: appserver
+    cmd: php artisan
